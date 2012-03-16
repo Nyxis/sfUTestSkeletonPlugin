@@ -68,11 +68,17 @@ class UTestLauncherTask extends sfBaseTask
 
     /**
      * core method
+<<<<<<< Updated upstream
 =======
      * return classes to generate
      * @param string $dirOrClass directory path or class name
      * @return array
 >>>>>>> 0f8e444066ad8e66fdeb9cf69b773bb05e1c4d06
+=======
+     * return classes to generate
+     * @param string $dirOrClass directory path or class name
+     * @return array
+>>>>>>> Stashed changes
      */
     protected function getClassesNames($dirOrClass)
     {
@@ -86,8 +92,15 @@ class UTestLauncherTask extends sfBaseTask
         if (is_dir($dirOrClass)) {
 >>>>>>> 0f8e444066ad8e66fdeb9cf69b773bb05e1c4d06
 
+<<<<<<< Updated upstream
             $this->logSection('read-dir', sprintf('read "%s" directory', $dirOrClass));
 
+=======
+        if (is_dir($dirOrClass)) {
+
+            $this->logSection('read-dir', sprintf('read "%s" directory', $dirOrClass));
+
+>>>>>>> Stashed changes
             $classFileList = glob(sprintf('%s*.class.php', $dirOrClass));
 
             if(empty($classFileList)) {
@@ -108,7 +121,11 @@ class UTestLauncherTask extends sfBaseTask
         }
 
         return $classes;
+<<<<<<< Updated upstream
     }
+=======
+    }}
+>>>>>>> Stashed changes
 
     /**
      * returns class infos, like comment's tags, classe and method name etc...
