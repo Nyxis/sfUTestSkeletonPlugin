@@ -32,10 +32,18 @@ class UTestLauncherTask extends sfBaseTask
     protected $tags = array();
 
     /**
+     * @var
+     */
+
+    protected $reflectionAnnoted;
+
+    /**
      * core method
      */
     protected function execute($arguments = array(), $options = array())
     {
+    	$this->reflectionAnnoted = new ReflectionAnnotedService();
+
         $classes = $arguments['classes'];
 
         if (is_dir($classes)) {
@@ -74,9 +82,13 @@ class UTestLauncherTask extends sfBaseTask
     {
         $this->logSection('parsing', sprintf('Parsing class "%s"', $classname));
 
+        $this->reflectionAnnoted->setTarget($classname);
+
+       $this->reflectionAnnoted->getInfos();
+
         // TODO @Landry
 
-        return array();
+        return $this->reflectionAnnoted->getInfos();
     }
 
 
