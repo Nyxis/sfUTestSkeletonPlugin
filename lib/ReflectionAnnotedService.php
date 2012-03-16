@@ -6,7 +6,7 @@ class ReflectionAnnotedService {
 
     public function setTarget($targetName) {
 
-     $this->target = new $targetName ();
+     $this->target = $targetName;
 
     }
 
@@ -16,7 +16,7 @@ class ReflectionAnnotedService {
     	$reflectionClass = new ReflectionAnnotatedClass($this->target);
 
     	// Set name
-    	$infos ['name'] = $reflectionClass->getName();
+    	$infos['class'] = $reflectionClass->getName();
 
     	// Manage method of class
     	$methods = $reflectionClass->getMethods();
@@ -26,6 +26,9 @@ class ReflectionAnnotedService {
 
     		// Test if method has @Utest annotation
 			if ($reflectionMethod->hasAnnotation('Utest')) {
+
+
+
 
     			// get parameter
 			//	$parameterMethod = $reflectionMethod->getParameters();var_dump($reflectionMethod->getAnnotation('Utest'));
@@ -44,9 +47,9 @@ class ReflectionAnnotedService {
 
 
     	// Set infos method
-    	$infos ['method'] = $infosMethods;
+    	$infos ['methods'] = $infosMethods;
 
-    	var_dump($infos);
+    	// var_dump($infos);
 		return $infos;
 
     }

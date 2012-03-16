@@ -60,7 +60,6 @@ class UTestLauncherTask extends sfBaseTask
     }
 
     /**
-<<<<<<< HEAD
      * @var
      */
 
@@ -68,39 +67,15 @@ class UTestLauncherTask extends sfBaseTask
 
     /**
      * core method
-<<<<<<< Updated upstream
-=======
      * return classes to generate
      * @param string $dirOrClass directory path or class name
      * @return array
->>>>>>> 0f8e444066ad8e66fdeb9cf69b773bb05e1c4d06
-=======
-     * return classes to generate
-     * @param string $dirOrClass directory path or class name
-     * @return array
->>>>>>> Stashed changes
      */
     protected function getClassesNames($dirOrClass)
     {
-<<<<<<< HEAD
-    	$this->reflectionAnnoted = new ReflectionAnnotedService();
-
-        $classes = $arguments['classes'];
-
-        if (is_dir($classes)) {
-=======
         if (is_dir($dirOrClass)) {
->>>>>>> 0f8e444066ad8e66fdeb9cf69b773bb05e1c4d06
-
-<<<<<<< Updated upstream
             $this->logSection('read-dir', sprintf('read "%s" directory', $dirOrClass));
 
-=======
-        if (is_dir($dirOrClass)) {
-
-            $this->logSection('read-dir', sprintf('read "%s" directory', $dirOrClass));
-
->>>>>>> Stashed changes
             $classFileList = glob(sprintf('%s*.class.php', $dirOrClass));
 
             if(empty($classFileList)) {
@@ -121,11 +96,7 @@ class UTestLauncherTask extends sfBaseTask
         }
 
         return $classes;
-<<<<<<< Updated upstream
     }
-=======
-    }}
->>>>>>> Stashed changes
 
     /**
      * returns class infos, like comment's tags, classe and method name etc...
@@ -136,11 +107,8 @@ class UTestLauncherTask extends sfBaseTask
     {
         $this->logSection('parsing', sprintf('Parsing class "%s"', $classname));
 
+        $this->reflectionAnnoted = new ReflectionAnnotedService();
         $this->reflectionAnnoted->setTarget($classname);
-
-       $this->reflectionAnnoted->getInfos();
-
-        // TODO @Landry
 
         return $this->reflectionAnnoted->getInfos();
     }
@@ -152,11 +120,8 @@ class UTestLauncherTask extends sfBaseTask
      */
     protected function genTest($classname, $tags)
     {
-        $test = $this->buildTest(
-            $this->getSkeleton(), $tags
-        );
-
         $testPath = $this->buildPath($classname);
+        $test = $this->buildTest($tags);
 
         if (!file_put_contents($testPath, $test)) {
             throw new RuntimeException(sprintf('Error while writting "%s" test file at path "%s".',
@@ -168,6 +133,11 @@ class UTestLauncherTask extends sfBaseTask
 
         return true;
     }
+
+    /**
+     * @var int
+     */
+    protected $treeLevel = 0;
 
     /**
      * build the test path for the class at param
@@ -199,8 +169,8 @@ class UTestLauncherTask extends sfBaseTask
             $i++;
         } while(empty($testDir));
 
+        $this->treeLevel = 0;
         $testDir = realpath($testDir).'/test/unit';
-
         foreach ($stackdir as $dir) {
             if ($dir == 'lib') {
                 continue;
@@ -217,6 +187,8 @@ class UTestLauncherTask extends sfBaseTask
 
                 $this->logSection('dir+', $testDir);
             }
+
+            $this->treeLevel++;
         }
 
         $testPath = sprintf('%s/%sTest.php',
@@ -224,8 +196,8 @@ class UTestLauncherTask extends sfBaseTask
         );
 
         if (is_file($testPath)) {
-            $testPath = sprintf('%s/%sTest_%s.php',
-                $testDir, ucfirst($classname), time()
+            $testPath = sprintf('%s/%sTest.utest.php',
+                $testDir, ucfirst($classname)
             );
         }
 
@@ -248,7 +220,10 @@ class UTestLauncherTask extends sfBaseTask
         }
 
         $this->twig = new Twig_Environment(
-            new Twig_Loader_Filesystem(dirname(__FILE__).'/skeleton')
+            new Twig_Loader_Filesystem(dirname(__FILE__).'/skeleton'), array(
+                'autoescape'       => false,
+                'strict_variables' => true
+            )
         );
 
         return $this->twig;
@@ -257,23 +232,35 @@ class UTestLauncherTask extends sfBaseTask
 
     /**
      * returns test file skeleton
-     * @return string
+     * @return mixed
      */
     protected function getSkeleton()
     {
-        return 'utest_skeleton.twig.php';
+        return $this->getTwig()->loadTemplate('utest_skeleton.twig.php');
     }
 
     /**
      * injects tags var in skeleton and returns it
-     * @param string $skeleton
      * @param mixed $tags
      * @return string
      */
-    protected function buildTest($skeleton, $tags)
+    protected function buildTest($tags)
     {
-        return $this->getTwig()->render($skeleton, array(
 
+        echo '<pre>';var_dump($tags);echo '</pre>';
+        die;
+
+        return $this->getSkeleton()->render(array(
+            'bootstrap' => str_repeat('/..', $this->treeLevel),
+            'fixtures' => array('test.yml'),
+            'class' => $tags['class'],
+            'methods' => array(
+                array(
+                    'name' => 'test1',
+                    'params' => array('foo', 'bar'),
+                    'exceptions' => array('Exception')
+                )
+            )
         ));
     }
 
