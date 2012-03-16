@@ -1,0 +1,6 @@
+[submodule "lib/vendor/Twig"]
+	path = lib/vendor/Twig
+	url = https://github.com/fabpot/Twig.git
+[submodule "lib/vendor/addendum"]
+	path = lib/vendor/addendum
+	url = https://github.com/eriknyk/addendum.git
