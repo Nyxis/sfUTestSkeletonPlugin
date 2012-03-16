@@ -4,10 +4,9 @@ class UTestLauncherTask extends sfBaseTask
 {
     protected function configure()
     {
-        // // add your own arguments here
-        // $this->addArguments(array(
-        //   new sfCommandArgument('my_arg', sfCommandArgument::REQUIRED, 'My argument'),
-        // ));
+        $this->addArguments(array(
+            new sfCommandArgument('classes', sfCommandArgument::REQUIRED, 'Class which have test to be generate'),
+        ));
 
         $this->addOptions(array(
             // new sfCommandOption('application', null, sfCommandOption::PARAMETER_REQUIRED, 'The application name'),
@@ -22,8 +21,63 @@ class UTestLauncherTask extends sfBaseTask
 
     }
 
+    /**
+     * @var string
+     */
+    protected $classes;
+
+    /**
+     * @var array
+     */
+    protected $tags = array();
+
+    /**
+     * core method
+     */
     protected function execute($arguments = array(), $options = array())
     {
-        $this->log('process generating unit test');
+        $classes = $arguments['classes'];
+
+        if (is_dir($classes)) {
+
+            $this->logSection('read-dir', sprintf('read "%s" directory', $classes));
+
+            $classFileList = glob(sprintf('%s*.class.php', $classes));
+
+            if(empty($classFileList)) {
+                $this->logSection('read-dir', sprintf('directory "%s" contains no php classes, abording task', $classes));
+                return -1;
+            }
+
+            foreach ($classFileList as $classFile) {
+                $this->classes[] = preg_filter('/^([\w]+)\.class\.php$/', '$1', basename($classFile), 1);
+            }
+        }
+        else {
+            $this->classes = array($classes);
+        }
+
+        foreach ($this->classes as $classname) {
+            $this->tags[$classname] = $this->getClassInfos($classname);
+        }
+
+
     }
+
+
+    /**
+     * returns class infos, like comment's tags, classe and method name etc...
+     * @param string $classname
+     * @return array
+     */
+    protected function getClassInfos($classname)
+    {
+        $this->logSection('parsing', sprintf('Parsing class "%s"', $classname));
+
+        // TODO @Landry
+
+        return array();
+    }
+
+
 }
