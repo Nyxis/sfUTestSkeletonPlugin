@@ -191,15 +191,9 @@ class UTestLauncherTask extends sfBaseTask
             $this->treeLevel++;
         }
 
-        $testPath = sprintf('%s/%sTest.php',
+        $testPath = sprintf('%s/%sTest.gen.php',
             $testDir, ucfirst($classname)
         );
-
-        if (is_file($testPath)) {
-            $testPath = sprintf('%s/%sTest.utest.php',
-                $testDir, ucfirst($classname)
-            );
-        }
 
         return $testPath;
     }
@@ -246,24 +240,8 @@ class UTestLauncherTask extends sfBaseTask
      */
     protected function buildTest($tags)
     {
-
-        echo '<pre>';var_dump($tags);echo '</pre>';
-        die;
-
-        return $this->getSkeleton()->render(array(
-            'bootstrap' => str_repeat('/..', $this->treeLevel),
-            'fixtures' => array('test.yml'),
-            'class' => $tags['class'],
-            'methods' => array(
-                array(
-                    'name' => 'test1',
-                    'params' => array('foo', 'bar'),
-                    'exceptions' => array('Exception')
-                )
-            )
-        ));
+        return $this->getSkeleton()->render(array_replace_recursive(array(
+            'bootstrap' => str_repeat('/..', $this->treeLevel)
+        ), $tags));
     }
-
-
-
 }
