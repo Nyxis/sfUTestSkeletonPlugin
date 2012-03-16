@@ -1,5 +1,14 @@
 <?php
 
+// init Twig
+if (!class_exists('Twig_Autoloader')) {
+    require_once dirname(__FILE__).'/../vendor/Twig/lib/Twig/Autoloader.php';
+    Twig_Autoloader::register();
+}
+
+/**
+ * Plugin's core task
+ */
 class UTestLauncherTask extends sfBaseTask
 {
     protected function configure()
@@ -22,17 +31,12 @@ class UTestLauncherTask extends sfBaseTask
     }
 
     /**
-     * @var string
-     */
-    protected $classes;
-
-    /**
      * core method
      */
     protected function execute($arguments = array(), $options = array())
     {
         try {
-            $this->classes = $this->getClassesNames($arguments['classes']);
+            $classes = $this->getClassesNames($arguments['classes']);
         }
         catch(InvalidArgumentException $e) {
             echo "\n"; $this->logBlock($e->getMessage().' -- abording task.', 'ERROR'); echo "\n";
@@ -40,7 +44,7 @@ class UTestLauncherTask extends sfBaseTask
             return -1;
         }
 
-        foreach ($this->classes as $classname) {
+        foreach ($classes as $classname) {
 
             $tags = $this->getClassInfos($classname);
 
@@ -88,7 +92,6 @@ class UTestLauncherTask extends sfBaseTask
         return $classes;
     }
 
-
     /**
      * returns class infos, like comment's tags, classe and method name etc...
      * @param string $classname
@@ -110,11 +113,11 @@ class UTestLauncherTask extends sfBaseTask
      */
     protected function genTest($classname, $tags)
     {
+        $test = $this->buildTest(
+            $this->getSkeleton(), $tags
+        );
+
         $testPath = $this->buildPath($classname);
-
-        $skeleton = $this->getSkeleton();
-
-        $test = $this->buildTest($skeleton, $tags);
 
         if (!file_put_contents($testPath, $test)) {
             throw new RuntimeException(sprintf('Error while writting "%s" test file at path "%s".',
@@ -134,20 +137,92 @@ class UTestLauncherTask extends sfBaseTask
      */
     protected function buildPath($classname)
     {
-        //TODO
+        // find class path in symfony autoload to build same dirs in tests
+        $classpath = sfSimpleAutoload::getInstance()->getClassPath($classname);
 
-        return sfConfig::get('sf_root_dir').'/'.ucfirst($classname).'Test.php';
+        // move backward in file system to find a test dir
+        $i = 0;
+        $stackdir = array();
+
+        do {
+            $localTestDir = dirname($classpath).str_repeat('/..', $i);
+
+            if(is_dir($localTestDir.'/test/')) {
+                $testDir = $localTestDir;
+            }
+            elseif($localTestDir == sfConfig::get('sf_root_dir')) {
+                $testDir = sfConfig::get('sf_test_dir');
+            }
+            else {
+                array_push($stackdir, preg_filter('#^.+\/([A-Za-z0-9_]+)$#', '$1', dirname($localTestDir)));
+            }
+
+            $i++;
+        } while(empty($testDir));
+
+        $testDir = realpath($testDir).'/test/unit';
+
+        foreach ($stackdir as $dir) {
+            if ($dir == 'lib') {
+                continue;
+            }
+
+            $testDir .= '/'.$dir;
+
+            if (!is_dir($testDir)) {
+                if (!mkdir($testDir)) {
+                    throw new RuntimeException(sprintf('Error while creating a directory at path "%s".',
+                        $testDir
+                    ));
+                }
+
+                $this->logSection('dir+', $testDir);
+            }
+        }
+
+        $testPath = sprintf('%s/%sTest.php',
+            $testDir, ucfirst($classname)
+        );
+
+        if (is_file($testPath)) {
+            $testPath = sprintf('%s/%sTest_%s.php',
+                $testDir, ucfirst($classname), time()
+            );
+        }
+
+        return $testPath;
     }
 
     /**
+     * @Twig_Environment
+     */
+    protected $twig;
+
+    /**
+     * returns Twig engine
+     * @return Twig_Environment
+     */
+    protected function getTwig()
+    {
+        if (!empty($this->twig)) {
+            return $this->twig;
+        }
+
+        $this->twig = new Twig_Environment(
+            new Twig_Loader_Filesystem(dirname(__FILE__).'/skeleton')
+        );
+
+        return $this->twig;
+    }
+
+
+    /**
      * returns test file skeleton
-     * @return mixed
+     * @return string
      */
     protected function getSkeleton()
     {
-        //TODO
-
-        return '{{ test }}';
+        return 'utest_skeleton.twig.php';
     }
 
     /**
@@ -158,7 +233,9 @@ class UTestLauncherTask extends sfBaseTask
      */
     protected function buildTest($skeleton, $tags)
     {
-        return $skeleton;
+        return $this->getTwig()->render($skeleton, array(
+
+        ));
     }
 
 
