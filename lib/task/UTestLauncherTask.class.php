@@ -27,41 +27,65 @@ class UTestLauncherTask extends sfBaseTask
     protected $classes;
 
     /**
-     * @var array
-     */
-    protected $tags = array();
-
-    /**
      * core method
      */
     protected function execute($arguments = array(), $options = array())
     {
-        $classes = $arguments['classes'];
-
-        if (is_dir($classes)) {
-
-            $this->logSection('read-dir', sprintf('read "%s" directory', $classes));
-
-            $classFileList = glob(sprintf('%s*.class.php', $classes));
-
-            if(empty($classFileList)) {
-                $this->logSection('read-dir', sprintf('directory "%s" contains no php classes, abording task', $classes));
-                return -1;
-            }
-
-            foreach ($classFileList as $classFile) {
-                $this->classes[] = preg_filter('/^([\w]+)\.class\.php$/', '$1', basename($classFile), 1);
-            }
+        try {
+            $this->classes = $this->getClassesNames($arguments['classes']);
         }
-        else {
-            $this->classes = array($classes);
+        catch(InvalidArgumentException $e) {
+            echo "\n"; $this->logBlock($e->getMessage().' -- abording task.', 'ERROR'); echo "\n";
+
+            return -1;
         }
 
         foreach ($this->classes as $classname) {
-            $this->tags[$classname] = $this->getClassInfos($classname);
+
+            $tags = $this->getClassInfos($classname);
+
+            try {
+                $this->genTest($classname, $tags);
+            }
+            catch(RuntimeException $e) {
+                echo "\n"; $this->logBlock($e->getMessage().' -- abording task.', 'ERROR'); echo "\n";
+
+                return -1;
+            }
+        }
+    }
+
+    /**
+     * return classes to generate
+     * @param string $dirOrClass directory path or class name
+     * @return array
+     */
+    protected function getClassesNames($dirOrClass)
+    {
+        if (is_dir($dirOrClass)) {
+
+            $this->logSection('read-dir', sprintf('read "%s" directory', $dirOrClass));
+
+            $classFileList = glob(sprintf('%s*.class.php', $dirOrClass));
+
+            if(empty($classFileList)) {
+                throw new InvalidArgumentException(sprintf('Directory "%s" contains no php classes', $dirOrClass));
+            }
+
+            $classes = array();
+            foreach ($classFileList as $classFile) {
+                $classes[] = preg_filter('/^([\w]+)\.class\.php$/', '$1', basename($classFile), 1);
+            }
+        }
+        else {
+            if (!class_exists($dirOrClass)) {
+                throw new InvalidArgumentException(sprintf('Class "%s" does not exists', $dirOrClass));
+            }
+
+            $classes = array($dirOrClass);
         }
 
-
+        return $classes;
     }
 
 
@@ -78,6 +102,65 @@ class UTestLauncherTask extends sfBaseTask
 
         return array();
     }
+
+    /**
+     * generate php unit test file for class in parameter
+     * @param string $classname
+     * @param mixed $tags
+     */
+    protected function genTest($classname, $tags)
+    {
+        $testPath = $this->buildPath($classname);
+
+        $skeleton = $this->getSkeleton();
+
+        $test = $this->buildTest($skeleton, $tags);
+
+        if (!file_put_contents($testPath, $test)) {
+            throw new RuntimeException(sprintf('Error while writting "%s" test file at path "%s".',
+                $classname, $testPath
+            ));
+        }
+
+        $this->logSection('file+', realpath($testPath));
+
+        return true;
+    }
+
+    /**
+     * build the test path for the class at param
+     * @param string $classname
+     * @return string path
+     */
+    protected function buildPath($classname)
+    {
+        //TODO
+
+        return sfConfig::get('sf_root_dir').'/'.ucfirst($classname).'Test.php';
+    }
+
+    /**
+     * returns test file skeleton
+     * @return mixed
+     */
+    protected function getSkeleton()
+    {
+        //TODO
+
+        return '{{ test }}';
+    }
+
+    /**
+     * injects tags var in skeleton and returns it
+     * @param string $skeleton
+     * @param mixed $tags
+     * @return string
+     */
+    protected function buildTest($skeleton, $tags)
+    {
+        return $skeleton;
+    }
+
 
 
 }
